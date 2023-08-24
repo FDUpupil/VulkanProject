@@ -55,6 +55,9 @@ void VulkanMgr::StopAndCleanVulkan() {
 void VulkanMgr::DrawFrame() {
 	int frameIndex = mVkComp.GetSyncFrameIndex(currentFrame);
 	vkResetCommandBuffer(tComBuffers[currentFrame], /*VkCommandBufferResetFlagBits*/ 0);
+
+	mVkImageLoader.ReadOneFrame();
+	
 	recordCommandBuffer(tComBuffers[currentFrame], frameIndex);
 
 	mVkComp.SubmitCommand(tComBuffers[currentFrame], currentFrame);
@@ -69,6 +72,8 @@ void VulkanMgr::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imag
 	if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
 		throw std::runtime_error("failed to begin recording command buffer!");
 	}
+
+	mVkImageLoader.RecordCommand(commandBuffer);
 
 	mVkRenderSet.BindRrenderSystem(commandBuffer, imageIndex);
 

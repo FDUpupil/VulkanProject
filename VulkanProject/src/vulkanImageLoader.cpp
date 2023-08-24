@@ -8,7 +8,10 @@ VulkanImageLoader::~VulkanImageLoader() {
 }
 
 void VulkanImageLoader::LoadImageTexture(short imageWidth, short imageHeight, const std::string imageFilePath) {
+    mImageFilePath = imageFilePath;
     VkDeviceSize size = imageWidth * imageHeight * 4;
+    loadImageWidth = imageWidth;
+    loadImageHeight = imageHeight;
     imageDataBuffer = new unsigned char[size];
 
     VkBufferCreateInfo bufferInfo{};
@@ -57,7 +60,7 @@ void VulkanImageLoader::LoadImageTexture(short imageWidth, short imageHeight, co
 
     vkBindImageMemory(mVkCompPtr->LogicalDevice(), mImage, imageMemory, 0);
 
-    FILE*  rawDataFile = fopen(imageFilePath.c_str(), "rb");
+    rawDataFile = fopen(imageFilePath.c_str(), "rb");
     fread(imageDataBuffer, size, 1, rawDataFile);
 
     void *mapData;
@@ -88,9 +91,8 @@ void VulkanImageLoader::LoadImageTexture(short imageWidth, short imageHeight, co
     imageDesInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     imageDesInfo.imageView = textureImageView;
 
-    VkCommandBuffer transLayoutCommand = mVkCompPtr->CreatebeginSingleTimeCommands();
+    //VkCommandBuffer transLayoutCommand = mVkCompPtr->CreatebeginSingleTimeCommands();
 
-    VkImageMemoryBarrier barrier{};
     barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
     barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
@@ -111,20 +113,19 @@ void VulkanImageLoader::LoadImageTexture(short imageWidth, short imageHeight, co
     sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
     destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
 
-    vkCmdPipelineBarrier(
-        transLayoutCommand,
-        sourceStage, destinationStage,
-        0,
-        0, nullptr,
-        0, nullptr,
-        1, &barrier
-    );
+    //vkCmdPipelineBarrier(
+    //    transLayoutCommand,
+    //    sourceStage, destinationStage,
+    //    0,
+    //    0, nullptr,
+    //    0, nullptr,
+    //    1, &barrier
+    //);
 
-    mVkCompPtr->EndSingleTimeCommands(transLayoutCommand);
+    //mVkCompPtr->EndSingleTimeCommands(transLayoutCommand);
 
-    VkCommandBuffer imageCopyCommand = mVkCompPtr->CreatebeginSingleTimeCommands();
+    //VkCommandBuffer imageCopyCommand = mVkCompPtr->CreatebeginSingleTimeCommands();
 
-    VkBufferImageCopy region{};
     region.bufferOffset = 0;
     region.bufferRowLength = 0;
     region.bufferImageHeight = 0;
@@ -139,16 +140,47 @@ void VulkanImageLoader::LoadImageTexture(short imageWidth, short imageHeight, co
         1
     };
 
-    vkCmdCopyBufferToImage(imageCopyCommand, stagingBuffer, mImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+    //vkCmdCopyBufferToImage(imageCopyCommand, stagingBuffer, mImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 
-    mVkCompPtr->EndSingleTimeCommands(imageCopyCommand);
+    //mVkCompPtr->EndSingleTimeCommands(imageCopyCommand);
 
-    vkDestroyBuffer(mVkCompPtr->LogicalDevice(), stagingBuffer, nullptr);
-    vkFreeMemory(mVkCompPtr->LogicalDevice(), stagingMemory, nullptr);
+    //vkDestroyBuffer(mVkCompPtr->LogicalDevice(), stagingBuffer, nullptr);
+    //vkFreeMemory(mVkCompPtr->LogicalDevice(), stagingMemory, nullptr);
 }
 
 void VulkanImageLoader::LoadImageTexture(short imageWidth, short imageHeight, unsigned char* imageData, int pixelFormat) {
 
+}
+
+void VulkanImageLoader::ReadOneFrame() {
+    if (rawDataFile) {
+        int size = loadImageWidth * loadImageHeight * 4;
+        auto read = fread(imageDataBuffer, size, 1, rawDataFile);
+        if (read != 1) {
+            fclose(rawDataFile);
+            rawDataFile = fopen(mImageFilePath.c_str(), "rb");
+        }
+
+        void* mapData;
+        vkMapMemory(mVkCompPtr->LogicalDevice(), stagingMemory, 0, size, 0, &mapData);
+        memcpy(mapData, imageDataBuffer, size);
+        vkUnmapMemory(mVkCompPtr->LogicalDevice(), stagingMemory);
+    }
+}
+
+void VulkanImageLoader::RecordCommand(VkCommandBuffer commandBuffer) {
+    VkPipelineStageFlags sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+    VkPipelineStageFlags destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+    vkCmdPipelineBarrier(
+        commandBuffer,
+        sourceStage, destinationStage,
+        0,
+        0, nullptr,
+        0, nullptr,
+        1, &barrier
+    );
+
+    vkCmdCopyBufferToImage(commandBuffer, stagingBuffer, mImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 }
 
 void VulkanImageLoader::BindTextureSampler(VkSampler textureSampler) {
