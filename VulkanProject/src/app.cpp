@@ -2,8 +2,8 @@
 
 int main() {
 	VulkanInfo vkInfo = {};
-	vkInfo.windowWidth = 800;
-	vkInfo.windowHeight = 600;
+	vkInfo.windowWidth = 1920;
+	vkInfo.windowHeight = 1080;
 	VulkanMgr vkMgr;
 	vkMgr.StartVulkanContext(vkInfo);
 	vkMgr.SetVulkanShader();

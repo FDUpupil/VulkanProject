@@ -20,12 +20,12 @@ void VulkanMgr::StartVulkanContext(VulkanInfo vkInfo) {
 }
 
 void VulkanMgr::SetVulkanShader() {
-	mVkShaderSet.LoadVertShaderStageInfo("D:/WorkProject/VulkanProject/VulkanProject/shader/simple_shader.vert.spv");
-	mVkShaderSet.LoadFragShaderStageInfo("D:/WorkProject/VulkanProject/VulkanProject/shader/simple_shader.frag.spv");
+	mVkShaderSet.LoadVertShaderStageInfo("shader/simple_shader.vert.spv");
+	mVkShaderSet.LoadFragShaderStageInfo("shader/simple_shader.frag.spv");
 }
 
 void VulkanMgr::PrepareTexture() {
-	mVkImageLoader.LoadImageTexture(2560, 1440, "D:/WorkProject/VulkanProject/VulkanProject/seq/rawData.yuv");
+	mVkImageLoader.LoadImageTexture(2560, 1440, "seq/rawData.yuv");
 	VkSampler textureSampler = mVkComp.CreateSampler(1);
 	mVkShaderSet.CreateAndLoadLayoutBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, textureSampler);
 	mVkImageLoader.BindTextureSampler(textureSampler);
