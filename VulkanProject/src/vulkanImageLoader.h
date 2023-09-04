@@ -16,6 +16,8 @@ public:
 	void ReadOneFrame();
 	void RecordCommand(VkCommandBuffer commandBuffer);
 
+	void SetImagePixelFormat(VkFormat imageFmt);
+
 	VkDescriptorImageInfo ImageDesInfo() {
 		return imageDesInfo;
 	}
@@ -25,6 +27,7 @@ private:
 
 	int loadImageWidth;
 	int loadImageHeight;
+	VkFormat mPixelFormat = VK_FORMAT_B8G8R8A8_SRGB;
 
 	VkBuffer stagingBuffer;
 	VkDeviceMemory stagingMemory;

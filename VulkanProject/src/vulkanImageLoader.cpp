@@ -35,7 +35,7 @@ void VulkanImageLoader::LoadImageTexture(short imageWidth, short imageHeight, co
     imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
     imageInfo.pNext = NULL;
     imageInfo.imageType = VK_IMAGE_TYPE_2D;
-    imageInfo.format = VK_FORMAT_R8G8B8A8_SRGB;
+    imageInfo.format = mPixelFormat;
     imageInfo.extent.width = imageWidth;
     imageInfo.extent.height = imageHeight;
     imageInfo.extent.depth = 1;
@@ -73,7 +73,7 @@ void VulkanImageLoader::LoadImageTexture(short imageWidth, short imageHeight, co
     viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
     viewInfo.image = mImage;
     viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    viewInfo.format = VK_FORMAT_R8G8B8A8_SRGB;
+    viewInfo.format = mPixelFormat;
     viewInfo.components.r = VK_COMPONENT_SWIZZLE_R;
     viewInfo.components.g = VK_COMPONENT_SWIZZLE_G;
     viewInfo.components.b = VK_COMPONENT_SWIZZLE_B;
@@ -185,4 +185,8 @@ void VulkanImageLoader::RecordCommand(VkCommandBuffer commandBuffer) {
 
 void VulkanImageLoader::BindTextureSampler(VkSampler textureSampler) {
     imageDesInfo.sampler = textureSampler;
+}
+
+void VulkanImageLoader::SetImagePixelFormat(VkFormat imageFmt) {
+    mPixelFormat = imageFmt;
 }

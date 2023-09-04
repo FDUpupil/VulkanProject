@@ -21,6 +21,10 @@ public:
 
     void StopAndCleanVulkan();
 
+    void RunOrStop();
+    void Reset();
+    void SetFmt(VkFormat imageFmt);
+
 private:
     void DrawFrame();
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
@@ -34,4 +38,7 @@ private:
     std::vector<VkCommandBuffer> tComBuffers;
     uint32_t currentFrame = 0;
     uint32_t maxFrameCnt = 0;
+
+    bool mPlay = false;
+    bool mHoldLoop = false;
 };

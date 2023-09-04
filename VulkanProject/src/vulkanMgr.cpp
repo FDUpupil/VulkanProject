@@ -13,7 +13,7 @@ VulkanMgr::~VulkanMgr() {
 void VulkanMgr::StartVulkanContext(VulkanInfo vkInfo) {
 	mVkInfo = vkInfo;
 	mVkComp.PrepareVulkan(false);
-	mVkComp.CreateWindow(vkInfo.windowWidth, vkInfo.windowHeight, false);
+	mVkComp.CreateWindowMy(vkInfo.windowWidth, vkInfo.windowHeight, false, this);
 	mVkComp.InitVulkanDevice();
 
 	mVkComp.PrepareRenderOnScreen();
@@ -27,6 +27,7 @@ void VulkanMgr::SetVulkanShader() {
 void VulkanMgr::PrepareTexture() {
 	mVkImageLoader.LoadImageTexture(2560, 1440, "seq/rawData.yuv");
 	VkSampler textureSampler = mVkComp.CreateSampler(1);
+	mVkShaderSet.CLearDescriptorSetLayoutBindings();
 	mVkShaderSet.CreateAndLoadLayoutBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, textureSampler);
 	mVkImageLoader.BindTextureSampler(textureSampler);
 }
@@ -40,6 +41,8 @@ void VulkanMgr::ReadyToRender() {
 	mVkRenderSet.SetRenderTargetFrameBuffer();
 	mVkRenderSet.AllocateDescriptorSets();
 	mVkRenderSet.UpdateDescriptorSets(mVkImageLoader.ImageDesInfo());
+
+	mVkImageLoader.ReadOneFrame();
 }
 
 void VulkanMgr::PresentLoop() {
@@ -53,10 +56,11 @@ void VulkanMgr::StopAndCleanVulkan() {
 }
 
 void VulkanMgr::DrawFrame() {
+	if (mHoldLoop) return;
 	int frameIndex = mVkComp.GetSyncFrameIndex(currentFrame);
 	vkResetCommandBuffer(tComBuffers[currentFrame], /*VkCommandBufferResetFlagBits*/ 0);
 
-	mVkImageLoader.ReadOneFrame();
+	if(mPlay) mVkImageLoader.ReadOneFrame();
 	
 	recordCommandBuffer(tComBuffers[currentFrame], frameIndex);
 
@@ -80,4 +84,22 @@ void VulkanMgr::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imag
 	if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
 		throw std::runtime_error("failed to record command buffer!");
 	}
+}
+
+//´°¿ÚÂß¼­
+void VulkanMgr::RunOrStop() {
+	mPlay = !mPlay;
+}
+
+void VulkanMgr::Reset() {
+	mHoldLoop = true;
+	mVkComp.HoldLoop();
+	PrepareTexture();
+	ReadyToRender();
+	mHoldLoop = false;
+}
+
+void VulkanMgr::SetFmt(VkFormat imageFmt) {
+	mVkImageLoader.SetImagePixelFormat(imageFmt);
+	Reset();
 }

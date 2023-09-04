@@ -1,4 +1,65 @@
 #include "vulkanComp.h"
+#include "vulkanMgr.h"
+#include <Windows.h>
+
+HWND CreateMenuWindow(HWND parentWindow) {
+    HMENU hSubMenuOpt = CreatePopupMenu();
+    AppendMenu(hSubMenuOpt, MF_STRING, 11, L"Run/Stop");
+    AppendMenu(hSubMenuOpt, MF_STRING, 12, L"Reset");
+
+    HMENU hSubMenuFmt = CreatePopupMenu();
+    AppendMenu(hSubMenuFmt, MF_STRING, 21, L"RGBA");
+    AppendMenu(hSubMenuFmt, MF_STRING, 22, L"BGRA");
+
+    HMENU hMenu = CreateMenu();
+    AppendMenu(hMenu, MF_POPUP, reinterpret_cast<UINT_PTR>(hSubMenuOpt), L"Opt");
+    AppendMenu(hMenu, MF_POPUP, reinterpret_cast<UINT_PTR>(hSubMenuFmt), L"Pixformat");
+    
+    //HWND menuWindow = CreateWindowEx(
+    //    0, L"STATIC", NULL,
+    //    WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS,
+    //    0, 0, 800, 20, parentWindow, hMenu, GetModuleHandle(NULL), NULL);
+
+    SetMenu(parentWindow, hMenu);
+
+    //return menuWindow;
+    return parentWindow;
+}
+
+static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
+    HDC         hDC;
+    PAINTSTRUCT ps;
+    VulkanMgr* vkMgr = reinterpret_cast<VulkanMgr*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
+
+    switch (message) {
+        case WM_COMMAND: {
+            int wmId = LOWORD(wParam);
+            switch (wmId) {
+                case 11: {
+                    vkMgr->RunOrStop();
+                    break;
+                }
+                case 12: {
+                    vkMgr->Reset();
+                    break;
+                }
+                case 21: {
+                    vkMgr->SetFmt(VK_FORMAT_R8G8B8A8_SRGB);
+                    break;
+                }
+                case 22: {
+                    vkMgr->SetFmt(VK_FORMAT_B8G8R8A8_SRGB);
+                    break;
+                }
+                
+            }
+
+        }
+        
+    }
+
+    return DefWindowProc(hWnd, message, wParam, lParam);
+}
 
 VulkanComp::VulkanComp() {
 
@@ -12,15 +73,26 @@ void VulkanComp::PrepareVulkan(bool needDebug) {
     glfwInit();
 }
 
-void VulkanComp::CreateWindow(int width, int height, bool resize) {
+void VulkanComp::CreateWindowMy(int width, int height, bool resize, void* handlerPtr) {
     windowWidth = width;
     windowHeight = height;
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE, resize);
 
     mWindow = glfwCreateWindow(windowWidth, windowHeight, "Vulkan", nullptr, nullptr);
+    glfwMakeContextCurrent(mWindow);
+
+    HWND hWnd = glfwGetWin32Window(mWindow);
+    HWND menuWindow = CreateMenuWindow(hWnd);
+
+    SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG_PTR)(handlerPtr));
+
+    SetWindowLongPtr(hWnd, GWLP_WNDPROC, (LONG_PTR)WndProc);
+
     glfwSetWindowUserPointer(mWindow, this);
 }
+
+
 
 void VulkanComp::InitVulkanDevice() {
     InitInstance();
@@ -479,6 +551,10 @@ void VulkanComp::ShowLoop(VlukanLoopFunc loopFunc) {
         glfwPollEvents();
         loopFunc();
     }
+}
+
+void VulkanComp::HoldLoop() {
+    vkDeviceWaitIdle(mDevice);
 }
 
 int VulkanComp::GetSyncFrameIndex(int renderOptCnt) {

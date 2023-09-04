@@ -20,6 +20,7 @@ public:
 
     size_t DescriptorSetLayoutBindingsCount() { return descriptorSetLayoutBindings.size(); }
     VkDescriptorSetLayoutBinding* DescriptorSetLayoutBindingsData() { return descriptorSetLayoutBindings.data(); }
+    void CLearDescriptorSetLayoutBindings() { descriptorSetLayoutBindings.clear(); }
 
 private:
     static std::vector<char> readFile(const std::string& filename);

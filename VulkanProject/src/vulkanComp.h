@@ -8,7 +8,7 @@ public:
     ~VulkanComp();
 
     void PrepareVulkan(bool needDebug);
-    void CreateWindow(int width, int height, bool resize);
+    void CreateWindowMy(int width, int height, bool resize, void* handlerPtr);
     void InitVulkanDevice();
     void CleanComponet();
     // ‰÷»æ
@@ -47,6 +47,7 @@ public:
     VkExtent2D SwapChainExtent() { return mSwapChainExtent; }
     //—≠ª∑œ‘ æ
     void ShowLoop(VlukanLoopFunc loopFunc);
+    void HoldLoop();
 
     int GetSyncFrameIndex(int renderOptCnt);
     void SubmitCommand(VkCommandBuffer comBuffer, int renderOptCnt);
