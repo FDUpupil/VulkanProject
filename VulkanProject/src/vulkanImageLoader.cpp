@@ -238,6 +238,14 @@ void VulkanImageLoader::LoadImageTexture(short imageWidth, short imageHeight, un
 }
 
 void VulkanImageLoader::ReadOneFrame() {
+    auto currentTime = std::chrono::high_resolution_clock::now();
+    auto elapsedTime = std::chrono::duration_cast<std::chrono::microseconds>(currentTime - lastReadTime).count();
+    if (elapsedTime < 1000000.0 / fps) {
+        return;
+    }
+
+    lastReadTime = currentTime;
+
     int bpp = BitPerPixel();
     if (rawDataFile) {
         int size = (loadImageWidth * loadImageHeight * bpp) >> 3 ;

@@ -24,6 +24,7 @@ public:
     void RunOrStop();
     void Reset();
     void SetFmt(VkFormat imageFmt);
+    void SetRes(int imageWidth, int imageHeight);
 
 private:
     void DrawFrame();
@@ -38,6 +39,9 @@ private:
     std::vector<VkCommandBuffer> tComBuffers;
     uint32_t currentFrame = 0;
     uint32_t maxFrameCnt = 0;
+
+    int mVideoImageWidth = 1280;
+    int mVideoImageHeight = 720;
 
     bool mPlay = false;
     bool mHoldLoop = false;

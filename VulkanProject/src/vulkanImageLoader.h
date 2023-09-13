@@ -51,4 +51,8 @@ private:
 	//VkBufferImageCopy region{};
 
 	std::vector<VkDescriptorImageInfo> imageDesInfos;
+
+	//Ê±Ðò¿ØÖÆ
+	std::chrono::high_resolution_clock::time_point lastReadTime;
+	int fps = 24;
 };

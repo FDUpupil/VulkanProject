@@ -12,9 +12,19 @@ HWND CreateMenuWindow(HWND parentWindow) {
     AppendMenu(hSubMenuFmt, MF_STRING, 22, L"BGRA32");
     AppendMenu(hSubMenuFmt, MF_STRING, 23, L"YUV420p");
 
+    HMENU hSubMenuRes = CreatePopupMenu();
+    AppendMenu(hSubMenuRes, MF_STRING, 31, L"1080p (1920x1080)");
+    AppendMenu(hSubMenuRes, MF_STRING, 32, L"720p (1280x720)");
+    AppendMenu(hSubMenuRes, MF_STRING, 33, L"VGA (640x480)");
+    AppendMenu(hSubMenuRes, MF_STRING, 34, L"WVGA (832x480)");
+    AppendMenu(hSubMenuRes, MF_STRING, 35, L"CIF (352x288)");
+    AppendMenu(hSubMenuRes, MF_STRING, 36, L"QCIF (176x144)");
+    AppendMenu(hSubMenuRes, MF_STRING, 37, L"SMALL (192x256)");
+
     HMENU hMenu = CreateMenu();
     AppendMenu(hMenu, MF_POPUP, reinterpret_cast<UINT_PTR>(hSubMenuOpt), L"Opt");
-    AppendMenu(hMenu, MF_POPUP, reinterpret_cast<UINT_PTR>(hSubMenuFmt), L"Pixformat");
+    AppendMenu(hMenu, MF_POPUP, reinterpret_cast<UINT_PTR>(hSubMenuFmt), L"Pixelformat");
+    AppendMenu(hMenu, MF_POPUP, reinterpret_cast<UINT_PTR>(hSubMenuRes), L"Resolution");
     
     //HWND menuWindow = CreateWindowEx(
     //    0, L"STATIC", NULL,
@@ -54,6 +64,34 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
                 }
                 case 23: {
                     vkMgr->SetFmt(VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM);
+                    break;
+                }
+                case 31: {
+                    vkMgr->SetRes(1920, 1208);
+                    break;
+                }
+                case 32: {
+                    vkMgr->SetRes(1280, 720);
+                    break;
+                }
+                case 33: {
+                    vkMgr->SetRes(640, 480);
+                    break;
+                }
+                case 34: {
+                    vkMgr->SetRes(832, 480);
+                    break;
+                }
+                case 35: {
+                    vkMgr->SetRes(352, 288);
+                    break;
+                }
+                case 36: {
+                    vkMgr->SetRes(176, 144);
+                    break;
+                }
+                case 37: {
+                    vkMgr->SetRes(192, 256);
                     break;
                 }
             }

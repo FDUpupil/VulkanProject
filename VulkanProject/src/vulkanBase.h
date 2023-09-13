@@ -18,6 +18,7 @@
 #include <optional>
 #include <set>
 #include <functional>
+#include <chrono>
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE

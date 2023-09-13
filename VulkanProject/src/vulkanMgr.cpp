@@ -28,7 +28,7 @@ void VulkanMgr::SetVulkanShader() {
 }
 
 void VulkanMgr::PrepareTexture() {
-	mVkImageLoader.LoadImageTexture(1280, 720, "seq/original_1280x720.yuv");
+	mVkImageLoader.LoadImageTexture(mVideoImageWidth, mVideoImageHeight, "seq/original_1280x720.yuv");
 	int pixelPlaneCnt = mVkImageLoader.CurrentPixelPlaneCnt();
 	mVkShaderSet.CLearDescriptorSetLayoutBindings();
 	for (int i = 0; i < pixelPlaneCnt; i++) {
@@ -108,5 +108,11 @@ void VulkanMgr::Reset() {
 
 void VulkanMgr::SetFmt(VkFormat imageFmt) {
 	mVkImageLoader.SetImagePixelFormat(imageFmt);
+	Reset();
+}
+
+void VulkanMgr::SetRes(int imageWidth, int imageHeight) {
+	mVideoImageWidth = imageWidth;
+	mVideoImageHeight = imageHeight;
 	Reset();
 }
