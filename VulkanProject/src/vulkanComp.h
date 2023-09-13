@@ -107,5 +107,5 @@ private:
     
     std::vector<const char*> deviceExtensions;
 
-    VkSampler textureSampler = 0;
+    std::vector<VkSampler> textureSamplers;
 };

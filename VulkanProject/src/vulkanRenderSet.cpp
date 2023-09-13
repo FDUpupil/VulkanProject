@@ -61,7 +61,7 @@ void VulkanRenderSet::CreateRnderPipelineLayout() {
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         layoutInfo.bindingCount = vkShaderSetPtr->DescriptorSetLayoutBindingsCount();
         layoutInfo.pBindings = vkShaderSetPtr->DescriptorSetLayoutBindingsData();
-        layoutInfo.pNext = nullptr;
+        //layoutInfo.pNext = nullptr;
         if (vkCreateDescriptorSetLayout(vkCompPtr->LogicalDevice(), &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS) {
             throw std::runtime_error("failed to create descriptor set layout!");
         }
@@ -180,19 +180,21 @@ void VulkanRenderSet::AllocateDescriptorSets() {
     descriptorSets = vkCompPtr->CreateDescriptorSets(descriptorSetLayout);
 }
 
-void VulkanRenderSet::UpdateDescriptorSets(VkDescriptorImageInfo imageDesInfo) {
-    mImageDesInfo = imageDesInfo;
+void VulkanRenderSet::UpdateDescriptorSets(std::vector<VkDescriptorImageInfo> imageDesInfos) {
+    mImageDesInfos = imageDesInfos;
     for (int i = 0; i < descriptorSets.size(); i++) {
         std::vector<VkWriteDescriptorSet> descriptorWrites;
-        VkWriteDescriptorSet descriptorWrite{};
-        descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        descriptorWrite.dstSet = descriptorSets[i];
-        descriptorWrite.dstBinding = 0;
-        descriptorWrite.dstArrayElement = 0;
-        descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        descriptorWrite.descriptorCount = 1;
-        descriptorWrite.pImageInfo = &imageDesInfo;
-        descriptorWrites.push_back(descriptorWrite);
+        for (int j = 0; j < mImageDesInfos.size(); j++) {
+            VkWriteDescriptorSet descriptorWrite{};
+            descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrite.dstSet = descriptorSets[i];
+            descriptorWrite.dstBinding = j;
+            descriptorWrite.dstArrayElement = 0;
+            descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descriptorWrite.descriptorCount = 1;
+            descriptorWrite.pImageInfo = &mImageDesInfos[j];
+            descriptorWrites.push_back(descriptorWrite);
+        }
         vkUpdateDescriptorSets(vkCompPtr->LogicalDevice(), descriptorWrites.size(), &descriptorWrites[0], 0, nullptr);
     }
 }

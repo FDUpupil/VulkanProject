@@ -8,8 +8,9 @@ HWND CreateMenuWindow(HWND parentWindow) {
     AppendMenu(hSubMenuOpt, MF_STRING, 12, L"Reset");
 
     HMENU hSubMenuFmt = CreatePopupMenu();
-    AppendMenu(hSubMenuFmt, MF_STRING, 21, L"RGBA");
-    AppendMenu(hSubMenuFmt, MF_STRING, 22, L"BGRA");
+    AppendMenu(hSubMenuFmt, MF_STRING, 21, L"RGBA32");
+    AppendMenu(hSubMenuFmt, MF_STRING, 22, L"BGRA32");
+    AppendMenu(hSubMenuFmt, MF_STRING, 23, L"YUV420p");
 
     HMENU hMenu = CreateMenu();
     AppendMenu(hMenu, MF_POPUP, reinterpret_cast<UINT_PTR>(hSubMenuOpt), L"Opt");
@@ -44,14 +45,17 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
                     break;
                 }
                 case 21: {
-                    vkMgr->SetFmt(VK_FORMAT_R8G8B8A8_SRGB);
+                    vkMgr->SetFmt(VK_FORMAT_R8G8B8A8_UNORM);
                     break;
                 }
                 case 22: {
-                    vkMgr->SetFmt(VK_FORMAT_B8G8R8A8_SRGB);
+                    vkMgr->SetFmt(VK_FORMAT_B8G8R8A8_UNORM);
                     break;
                 }
-                
+                case 23: {
+                    vkMgr->SetFmt(VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM);
+                    break;
+                }
             }
 
         }
@@ -260,7 +264,7 @@ void VulkanComp::CreateSwapchain() {
     VkExtent2D extent;
 
     for (const auto& availableFormat : swapChainSupport.formats) {
-        if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+        if (availableFormat.format == VK_FORMAT_R8G8B8A8_UNORM && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
             surfaceFormat = availableFormat;
             break;
         }
@@ -395,7 +399,10 @@ std::vector<VkFramebuffer> VulkanComp::CreateRenderFrameBuffer(VkRenderPass rend
 
 void VulkanComp::CreateDescriptorPool() {
     std::vector<VkDescriptorPoolSize> poolSizes{};
-    poolSizes.push_back({ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER , 3 });
+    poolSizes.push_back({ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 3 });
+    poolSizes.push_back({ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 3 });
+    poolSizes.push_back({ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 3 });
+    poolSizes.push_back({ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 3 });
 
     VkDescriptorPoolCreateInfo descriptorPoolInfo{};
     descriptorPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -506,13 +513,14 @@ void VulkanComp::EndSingleTimeCommands(VkCommandBuffer commandBuffer) {
 }
 
 VkSampler VulkanComp::CreateSampler(uint32_t mipLevels) {
+    VkSampler textureSampler;
     VkSamplerCreateInfo samplerInfo{};
     samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
     samplerInfo.magFilter = VK_FILTER_LINEAR;
     samplerInfo.minFilter = VK_FILTER_LINEAR;
-    samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-    samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-    samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+    samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+    samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
     samplerInfo.anisotropyEnable = VK_FALSE;
     samplerInfo.maxAnisotropy = 1.0f;
     //deviceProperties.limits.maxSamplerAnisotropy;
@@ -524,10 +532,12 @@ VkSampler VulkanComp::CreateSampler(uint32_t mipLevels) {
     samplerInfo.minLod = 0;
     samplerInfo.maxLod = static_cast<float>(mipLevels);
     samplerInfo.mipLodBias = 0;
-
+    
     if (vkCreateSampler(mDevice, &samplerInfo, nullptr, &textureSampler) != VK_SUCCESS) {
         throw std::runtime_error("failed to create texture samoler!");
     }
+
+    textureSamplers.push_back(textureSampler);
 
     return textureSampler;
 }
@@ -589,7 +599,8 @@ void VulkanComp::SubmitCommand(VkCommandBuffer comBuffer, int renderOptCnt) {
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = signalSemaphores;
 
-    if (vkQueueSubmit(mGraphicsQueue, 1, &submitInfo, mInFlightFences[renderOptCnt]) != VK_SUCCESS) {
+    VkResult res = vkQueueSubmit(mGraphicsQueue, 1, &submitInfo, mInFlightFences[renderOptCnt]);
+    if (res != VK_SUCCESS) {
         throw std::runtime_error("failed to submit draw command buffer!");
     }
 

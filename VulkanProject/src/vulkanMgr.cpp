@@ -20,16 +20,22 @@ void VulkanMgr::StartVulkanContext(VulkanInfo vkInfo) {
 }
 
 void VulkanMgr::SetVulkanShader() {
-	mVkShaderSet.LoadVertShaderStageInfo("shader/simple_shader.vert.spv");
-	mVkShaderSet.LoadFragShaderStageInfo("shader/simple_shader.frag.spv");
+	std::string shaderSuffix = mVkImageLoader.CurrentShaderSuffix();
+	std::string vertShaderFilePath = "shader/simple_shader_" + shaderSuffix + ".vert.spv";
+	std::string fragShaderFilePath = "shader/simple_shader_" + shaderSuffix + ".frag.spv";
+	mVkShaderSet.LoadVertShaderStageInfo(vertShaderFilePath);
+	mVkShaderSet.LoadFragShaderStageInfo(fragShaderFilePath);
 }
 
 void VulkanMgr::PrepareTexture() {
-	mVkImageLoader.LoadImageTexture(2560, 1440, "seq/rawData.yuv");
-	VkSampler textureSampler = mVkComp.CreateSampler(1);
+	mVkImageLoader.LoadImageTexture(1280, 720, "seq/original_1280x720.yuv");
+	int pixelPlaneCnt = mVkImageLoader.CurrentPixelPlaneCnt();
 	mVkShaderSet.CLearDescriptorSetLayoutBindings();
-	mVkShaderSet.CreateAndLoadLayoutBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, textureSampler);
-	mVkImageLoader.BindTextureSampler(textureSampler);
+	for (int i = 0; i < pixelPlaneCnt; i++) {
+		VkSampler textureSampler = mVkComp.CreateSampler(0);
+		mVkShaderSet.CreateAndLoadLayoutBinding(i, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, textureSampler);
+		mVkImageLoader.BindTextureSampler(i, textureSampler);
+	}
 }
 
 void VulkanMgr::ReadyToRender() {
@@ -40,7 +46,7 @@ void VulkanMgr::ReadyToRender() {
 	mVkRenderSet.CreateRnderPipeline();
 	mVkRenderSet.SetRenderTargetFrameBuffer();
 	mVkRenderSet.AllocateDescriptorSets();
-	mVkRenderSet.UpdateDescriptorSets(mVkImageLoader.ImageDesInfo());
+	mVkRenderSet.UpdateDescriptorSets(mVkImageLoader.ImageDesInfos());
 
 	mVkImageLoader.ReadOneFrame();
 }
@@ -94,6 +100,7 @@ void VulkanMgr::RunOrStop() {
 void VulkanMgr::Reset() {
 	mHoldLoop = true;
 	mVkComp.HoldLoop();
+	SetVulkanShader();
 	PrepareTexture();
 	ReadyToRender();
 	mHoldLoop = false;

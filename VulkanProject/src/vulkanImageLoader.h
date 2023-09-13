@@ -11,15 +11,19 @@ public:
 
 	void LoadImageTexture(short imageWidth, short imageHeight, const std::string imageFilePath);
 	void LoadImageTexture(short imageWidth, short imageHeight, unsigned char* imageData, int pixelFormat);
-	void BindTextureSampler(VkSampler textureSampler);
+	void BindTextureSampler(int index, VkSampler textureSampler);
 
 	void ReadOneFrame();
 	void RecordCommand(VkCommandBuffer commandBuffer);
 
 	void SetImagePixelFormat(VkFormat imageFmt);
 
-	VkDescriptorImageInfo ImageDesInfo() {
-		return imageDesInfo;
+	int CurrentPixelPlaneCnt();
+	int BitPerPixel();
+	std::string CurrentShaderSuffix();
+
+	std::vector<VkDescriptorImageInfo> ImageDesInfos() {
+		return imageDesInfos;
 	}
 
 private:
@@ -27,19 +31,24 @@ private:
 
 	int loadImageWidth;
 	int loadImageHeight;
-	VkFormat mPixelFormat = VK_FORMAT_B8G8R8A8_SRGB;
+	VkFormat mPixelFormat = VK_FORMAT_R8G8B8A8_UNORM;
 
 	VkBuffer stagingBuffer;
 	VkDeviceMemory stagingMemory;
 	VkImage mImage;
 	VkImageView textureImageView;
+	VkImageView textureImageViewU;
+	VkImageView textureImageViewV;
+
 	VkDeviceMemory imageMemory;
 	unsigned char* imageDataBuffer = nullptr;
 	std::string mImageFilePath = "";
 	FILE* rawDataFile = nullptr;
 
 	VkImageMemoryBarrier barrier{};
-	VkBufferImageCopy region{};
+	std::vector <VkImageMemoryBarrier> barriers;
+	std::vector <VkBufferImageCopy> regions;
+	//VkBufferImageCopy region{};
 
-	VkDescriptorImageInfo imageDesInfo;
+	std::vector<VkDescriptorImageInfo> imageDesInfos;
 };

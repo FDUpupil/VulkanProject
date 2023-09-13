@@ -9,10 +9,15 @@ VulkanImageLoader::~VulkanImageLoader() {
 
 void VulkanImageLoader::LoadImageTexture(short imageWidth, short imageHeight, const std::string imageFilePath) {
     mImageFilePath = imageFilePath;
-    VkDeviceSize size = imageWidth * imageHeight * 4;
+    int bpp = BitPerPixel();
+    VkDeviceSize size = (imageWidth * imageHeight * bpp) >> 3;
     loadImageWidth = imageWidth;
     loadImageHeight = imageHeight;
     imageDataBuffer = new unsigned char[size];
+
+    int pixelPlaneCnt = CurrentPixelPlaneCnt();
+    imageDesInfos.clear();
+    regions.clear();
 
     VkBufferCreateInfo bufferInfo{};
     bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -65,7 +70,7 @@ void VulkanImageLoader::LoadImageTexture(short imageWidth, short imageHeight, co
 
     void *mapData;
     vkMapMemory(mVkCompPtr->LogicalDevice(), stagingMemory, 0, size, 0, &mapData);
-    memcpy(mapData, imageDataBuffer, imageWidth * imageHeight * 4);
+    memcpy(mapData, imageDataBuffer, (imageWidth * imageHeight * bpp) >> 3);
     vkUnmapMemory(mVkCompPtr->LogicalDevice(), stagingMemory);
 
     VkImageViewCreateInfo viewInfo{};
@@ -78,7 +83,7 @@ void VulkanImageLoader::LoadImageTexture(short imageWidth, short imageHeight, co
     viewInfo.components.g = VK_COMPONENT_SWIZZLE_G;
     viewInfo.components.b = VK_COMPONENT_SWIZZLE_B;
     viewInfo.components.a = VK_COMPONENT_SWIZZLE_A;
-    viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_PLANE_0_BIT;
     viewInfo.subresourceRange.baseMipLevel = 0;
     viewInfo.subresourceRange.levelCount = 1;
     viewInfo.subresourceRange.baseArrayLayer = 0;
@@ -88,48 +93,89 @@ void VulkanImageLoader::LoadImageTexture(short imageWidth, short imageHeight, co
         throw std::runtime_error("failed to allocate imageview failed!");
     }
 
-    imageDesInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    imageDesInfo.imageView = textureImageView;
+    VkDescriptorImageInfo imageDesInfoY;
+    imageDesInfoY.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    imageDesInfoY.imageView = textureImageView;
+    imageDesInfos.push_back(imageDesInfoY);
 
-    //VkCommandBuffer transLayoutCommand = mVkCompPtr->CreatebeginSingleTimeCommands();
+    if (pixelPlaneCnt >= 2) {
+        VkImageViewCreateInfo viewInfoU{};
+        viewInfoU.pNext = nullptr;
+        viewInfoU.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        viewInfoU.image = mImage;
+        viewInfoU.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        viewInfoU.format = mPixelFormat;
+        viewInfoU.components.r = VK_COMPONENT_SWIZZLE_R;
+        viewInfoU.components.g = VK_COMPONENT_SWIZZLE_G;
+        viewInfoU.components.b = VK_COMPONENT_SWIZZLE_B;
+        viewInfoU.components.a = VK_COMPONENT_SWIZZLE_A;
+        viewInfoU.subresourceRange.aspectMask = VK_IMAGE_ASPECT_PLANE_1_BIT;
+        viewInfoU.subresourceRange.baseMipLevel = 0;
+        viewInfoU.subresourceRange.levelCount = 1;
+        viewInfoU.subresourceRange.baseArrayLayer = 0;
+        viewInfoU.subresourceRange.layerCount = 1;
 
-    barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-    barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier.image = mImage;
-    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    barrier.subresourceRange.baseMipLevel = 0;
-    barrier.subresourceRange.levelCount = 1;
-    barrier.subresourceRange.baseArrayLayer = 0;
-    barrier.subresourceRange.layerCount = 1;
+        if (vkCreateImageView(mVkCompPtr->LogicalDevice(), &viewInfoU, nullptr, &textureImageViewU) != VK_SUCCESS) {
+            throw std::runtime_error("failed to allocate imageview failed!");
+        }
 
-    VkPipelineStageFlags sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-    VkPipelineStageFlags destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+        VkDescriptorImageInfo imageDesInfoU;
+        imageDesInfoU.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        imageDesInfoU.imageView = textureImageViewU;
+        imageDesInfos.push_back(imageDesInfoU);
+    }
 
-    barrier.srcAccessMask = 0;
-    barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-    sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-    destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+    if (pixelPlaneCnt >= 3) {
+        VkImageViewCreateInfo viewInfoV{};
+        viewInfoV.pNext = nullptr;
+        viewInfoV.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        viewInfoV.image = mImage;
+        viewInfoV.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        viewInfoV.format = mPixelFormat;
+        viewInfoV.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+        viewInfoV.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+        viewInfoV.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+        viewInfoV.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+        viewInfoV.subresourceRange.aspectMask = VK_IMAGE_ASPECT_PLANE_2_BIT;
+        viewInfoV.subresourceRange.baseMipLevel = 0;
+        viewInfoV.subresourceRange.levelCount = 1;
+        viewInfoV.subresourceRange.baseArrayLayer = 0;
+        viewInfoV.subresourceRange.layerCount = 1;
 
-    //vkCmdPipelineBarrier(
-    //    transLayoutCommand,
-    //    sourceStage, destinationStage,
-    //    0,
-    //    0, nullptr,
-    //    0, nullptr,
-    //    1, &barrier
-    //);
+        if (vkCreateImageView(mVkCompPtr->LogicalDevice(), &viewInfoV, nullptr, &textureImageViewV) != VK_SUCCESS) {
+            throw std::runtime_error("failed to allocate imageview failed!");
+        }
 
-    //mVkCompPtr->EndSingleTimeCommands(transLayoutCommand);
+        VkDescriptorImageInfo imageDesInfoV;
+        imageDesInfoV.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        imageDesInfoV.imageView = textureImageViewV;
+        imageDesInfos.push_back(imageDesInfoV);
+    }
 
-    //VkCommandBuffer imageCopyCommand = mVkCompPtr->CreatebeginSingleTimeCommands();
+    //VkImageMemoryBarrier barrier = {};
+    //barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    //barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    //barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    //barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    //barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    //barrier.image = mImage;
+    //barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    //barrier.subresourceRange.baseMipLevel = 0;
+    //barrier.subresourceRange.levelCount = 1;
+    //barrier.subresourceRange.baseArrayLayer = 0;
+    //barrier.subresourceRange.layerCount = 1;
+
+    //barrier.srcAccessMask = 0;
+    //barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+    //barriers.push_back(barrier);
+
+    VkBufferImageCopy region = {};
 
     region.bufferOffset = 0;
     region.bufferRowLength = 0;
     region.bufferImageHeight = 0;
-    region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_PLANE_0_BIT;
     region.imageSubresource.mipLevel = 0;
     region.imageSubresource.baseArrayLayer = 0;
     region.imageSubresource.layerCount = 1;
@@ -139,6 +185,45 @@ void VulkanImageLoader::LoadImageTexture(short imageWidth, short imageHeight, co
         (unsigned int)imageHeight,
         1
     };
+    regions.push_back(region);
+
+    if (pixelPlaneCnt >= 2) {
+        VkBufferImageCopy regionU = {};
+
+        regionU.bufferOffset = imageWidth * imageHeight;
+        regionU.bufferRowLength = 0;
+        regionU.bufferImageHeight = 0;
+        regionU.imageSubresource.aspectMask = VK_IMAGE_ASPECT_PLANE_1_BIT;
+        regionU.imageSubresource.mipLevel = 0;
+        regionU.imageSubresource.baseArrayLayer = 0;
+        regionU.imageSubresource.layerCount = 1;
+        regionU.imageOffset = { 0, 0, 0 };
+        regionU.imageExtent = {
+            (unsigned int)imageWidth / 2,
+            (unsigned int)imageHeight / 2,
+            1
+        };
+        regions.push_back(regionU);
+    }
+
+    if (pixelPlaneCnt >= 3) {
+        VkBufferImageCopy regionV = {};
+
+        regionV.bufferOffset = imageWidth * imageHeight + imageWidth * imageHeight / 4;
+        regionV.bufferRowLength = 0;
+        regionV.bufferImageHeight = 0;
+        regionV.imageSubresource.aspectMask = VK_IMAGE_ASPECT_PLANE_2_BIT;
+        regionV.imageSubresource.mipLevel = 0;
+        regionV.imageSubresource.baseArrayLayer = 0;
+        regionV.imageSubresource.layerCount = 1;
+        regionV.imageOffset = { 0, 0, 0 };
+        regionV.imageExtent = {
+            (unsigned int)imageWidth / 2,
+            (unsigned int)imageHeight / 2,
+            1
+        };
+        regions.push_back(regionV);
+    }
 
     //vkCmdCopyBufferToImage(imageCopyCommand, stagingBuffer, mImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 
@@ -153,8 +238,9 @@ void VulkanImageLoader::LoadImageTexture(short imageWidth, short imageHeight, un
 }
 
 void VulkanImageLoader::ReadOneFrame() {
+    int bpp = BitPerPixel();
     if (rawDataFile) {
-        int size = loadImageWidth * loadImageHeight * 4;
+        int size = (loadImageWidth * loadImageHeight * bpp) >> 3 ;
         auto read = fread(imageDataBuffer, size, 1, rawDataFile);
         if (read != 1) {
             fclose(rawDataFile);
@@ -171,22 +257,76 @@ void VulkanImageLoader::ReadOneFrame() {
 void VulkanImageLoader::RecordCommand(VkCommandBuffer commandBuffer) {
     VkPipelineStageFlags sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
     VkPipelineStageFlags destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-    vkCmdPipelineBarrier(
-        commandBuffer,
-        sourceStage, destinationStage,
-        0,
-        0, nullptr,
-        0, nullptr,
-        1, &barrier
-    );
+    //vkCmdPipelineBarrier(
+    //    commandBuffer,
+    //    sourceStage, destinationStage,
+    //    0,
+    //    0, nullptr,
+    //    0, nullptr,
+    //    1, barriers.data()
+    //);
 
-    vkCmdCopyBufferToImage(commandBuffer, stagingBuffer, mImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+    vkCmdCopyBufferToImage(commandBuffer, stagingBuffer, mImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, regions.size(), regions.data());
 }
 
-void VulkanImageLoader::BindTextureSampler(VkSampler textureSampler) {
-    imageDesInfo.sampler = textureSampler;
+void VulkanImageLoader::BindTextureSampler(int index, VkSampler textureSampler) {
+    imageDesInfos[index].sampler = textureSampler;
 }
 
 void VulkanImageLoader::SetImagePixelFormat(VkFormat imageFmt) {
     mPixelFormat = imageFmt;
+}
+
+int VulkanImageLoader::CurrentPixelPlaneCnt() {
+    int pixelPlaneCnt = 1;
+    switch (mPixelFormat) {
+        case VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM: {
+            pixelPlaneCnt = 3;
+            break;
+        }
+        case VK_FORMAT_G8_B8R8_2PLANE_420_UNORM: {
+            pixelPlaneCnt = 2;
+            break;
+        }
+        default: {
+            pixelPlaneCnt = 1;
+            break;
+        }
+    }
+    return pixelPlaneCnt;
+}
+
+std::string VulkanImageLoader::CurrentShaderSuffix() {
+    std::string suffix = "";
+    switch (mPixelFormat) {
+        case VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM: {
+            suffix = "yuv420p";
+            break;
+        }
+        case VK_FORMAT_G8_B8R8_2PLANE_420_UNORM: {
+            suffix = "yuvnv12";
+            break;
+        }
+        default: {
+            suffix = "rgb";
+            break;
+        }
+    }
+    return suffix;
+}
+
+int VulkanImageLoader::BitPerPixel() {
+    int bitPerPiexl = 1;
+    switch (mPixelFormat) {
+        case VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM:
+        case VK_FORMAT_G8_B8R8_2PLANE_420_UNORM: {
+            bitPerPiexl = 12;
+            break;
+        }
+        default: {
+            bitPerPiexl = 32;
+            break;
+        }
+    }
+    return bitPerPiexl;
 }

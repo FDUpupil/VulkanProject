@@ -17,7 +17,7 @@ public:
 	void CreateRnderPipeline();
 	void SetRenderTargetFrameBuffer();
 	void AllocateDescriptorSets();
-	void UpdateDescriptorSets(VkDescriptorImageInfo imageDesInfo);
+	void UpdateDescriptorSets(std::vector<VkDescriptorImageInfo> imageDesInfos);
 	void CleanRenderComponet();
 
 	void AddPushConstant(const VkPushConstantRange& constantRange, const char* data);
@@ -44,5 +44,5 @@ private:
 	std::vector<VkFramebuffer> renderTargetBuffer;
 	std::vector<VkDescriptorSet> descriptorSets;
 
-	VkDescriptorImageInfo mImageDesInfo;
+	std::vector<VkDescriptorImageInfo> mImageDesInfos;
 };

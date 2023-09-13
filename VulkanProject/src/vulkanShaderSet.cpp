@@ -62,10 +62,10 @@ void VulkanShaderSet::CreateAndLoadLayoutBinding(uint32_t id, VkDescriptorType t
     binding.descriptorType = type;
     binding.pImmutableSamplers = nullptr;
     binding.stageFlags = flag;
-    if (sampler) {
-        mTextureSampler = sampler;
-        binding.pImmutableSamplers = &mTextureSampler;
-    }
+    //if (sampler) {
+    //    mTextureSamplers.push_back(sampler);
+    //    binding.pImmutableSamplers = &mTextureSamplers[0];
+    //}
     
     descriptorSetLayoutBindings.push_back(binding);
 }

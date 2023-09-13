@@ -27,7 +27,7 @@ private:
 
     VulkanComp* vkCompPtr;
 
-    VkSampler mTextureSampler;
+    std::vector<VkSampler> mTextureSamplers;
 
     std::vector<VkPipelineShaderStageCreateInfo> shaderStageCreateInfos;
 
