@@ -65,6 +65,11 @@ void VulkanImageLoader::LoadImageTexture(short imageWidth, short imageHeight, co
 
     vkBindImageMemory(mVkCompPtr->LogicalDevice(), mImage, imageMemory, 0);
 
+    if (rawDataFile) {
+        fclose(rawDataFile);
+        rawDataFile = nullptr;
+    }
+
     rawDataFile = fopen(imageFilePath.c_str(), "rb");
     fread(imageDataBuffer, size, 1, rawDataFile);
 
@@ -329,6 +334,15 @@ int VulkanImageLoader::BitPerPixel() {
         case VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM:
         case VK_FORMAT_G8_B8R8_2PLANE_420_UNORM: {
             bitPerPiexl = 12;
+            break;
+        }
+        case VK_FORMAT_R16G16B16A16_UNORM: {
+            bitPerPiexl = 64;
+            break;
+        }
+        case VK_FORMAT_B8G8R8_UNORM:
+        case VK_FORMAT_R8G8B8_UNORM: {
+            bitPerPiexl = 24;
             break;
         }
         default: {

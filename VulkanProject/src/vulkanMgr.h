@@ -26,9 +26,13 @@ public:
     void SetFmt(VkFormat imageFmt);
     void SetRes(int imageWidth, int imageHeight);
 
+    void SetInputFile(std::string imageFilePath);
+
 private:
     void DrawFrame();
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+
+    std::string mInputSeqFile = "seq/rawData.yuv";
 
     VulkanInfo mVkInfo;
     VulkanComp mVkComp;

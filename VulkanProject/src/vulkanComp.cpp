@@ -10,7 +10,11 @@ HWND CreateMenuWindow(HWND parentWindow) {
     HMENU hSubMenuFmt = CreatePopupMenu();
     AppendMenu(hSubMenuFmt, MF_STRING, 21, L"RGBA32");
     AppendMenu(hSubMenuFmt, MF_STRING, 22, L"BGRA32");
-    AppendMenu(hSubMenuFmt, MF_STRING, 23, L"YUV420p");
+    AppendMenu(hSubMenuFmt, MF_STRING, 23, L"RGBA64");
+    AppendMenu(hSubMenuFmt, MF_STRING, 24, L"RGB24");
+    //AppendMenu(hSubMenuFmt, MF_STRING, 25, L"BGR24");
+    AppendMenu(hSubMenuFmt, MF_STRING, 26, L"YUV420p");
+    AppendMenu(hSubMenuFmt, MF_STRING, 27, L"NV12");
 
     HMENU hSubMenuRes = CreatePopupMenu();
     AppendMenu(hSubMenuRes, MF_STRING, 31, L"1080p (1920x1080)");
@@ -20,6 +24,7 @@ HWND CreateMenuWindow(HWND parentWindow) {
     AppendMenu(hSubMenuRes, MF_STRING, 35, L"CIF (352x288)");
     AppendMenu(hSubMenuRes, MF_STRING, 36, L"QCIF (176x144)");
     AppendMenu(hSubMenuRes, MF_STRING, 37, L"SMALL (192x256)");
+    AppendMenu(hSubMenuRes, MF_STRING, 38, L"2K (2560x1440)");
 
     HMENU hMenu = CreateMenu();
     AppendMenu(hMenu, MF_POPUP, reinterpret_cast<UINT_PTR>(hSubMenuOpt), L"Opt");
@@ -63,7 +68,23 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
                     break;
                 }
                 case 23: {
+                    vkMgr->SetFmt(VK_FORMAT_R16G16B16A16_UNORM);
+                    break;
+                }
+                case 24: {
+                    vkMgr->SetFmt(VK_FORMAT_R8G8B8_UNORM);
+                    break;
+                }
+                case 25: {
+                    vkMgr->SetFmt(VK_FORMAT_B8G8R8_UNORM);
+                    break;
+                }
+                case 26: {
                     vkMgr->SetFmt(VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM);
+                    break;
+                }
+                case 27: {
+                    vkMgr->SetFmt(VK_FORMAT_G8_B8R8_2PLANE_420_UNORM);
                     break;
                 }
                 case 31: {
@@ -94,10 +115,27 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
                     vkMgr->SetRes(192, 256);
                     break;
                 }
+                case 38: {
+                    vkMgr->SetRes(2560, 1440);
+                    break;
+                }
             }
-
+            break;
         }
-        
+        case WM_DROPFILES: {
+            HDROP hDrop = (HDROP)wParam;
+            UINT fileCnt = DragQueryFile(hDrop, 0xFFFFFFFF, NULL, 0);
+            for (int i = 0; i < fileCnt; i++) {
+                TCHAR filePath[MAX_PATH];
+                DragQueryFile(hDrop, i, filePath, sizeof(filePath) / sizeof(TCHAR));
+                int len = WideCharToMultiByte(CP_ACP, 0, filePath, -1, NULL, 0, NULL, NULL);
+                char* str = new char[len * sizeof(char)];
+                WideCharToMultiByte(CP_ACP, 0, filePath, -1, str, len, NULL, NULL);
+                vkMgr->SetInputFile(str);
+            }
+            DragFinish(hDrop);
+            break;
+        }
     }
 
     return DefWindowProc(hWnd, message, wParam, lParam);
