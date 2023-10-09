@@ -6,7 +6,6 @@ class VulkanComp;
 
 class VulkanShaderSet{
 public:
-    VulkanShaderSet() = default;
     VulkanShaderSet(VulkanComp* comp);
     ~VulkanShaderSet();
 

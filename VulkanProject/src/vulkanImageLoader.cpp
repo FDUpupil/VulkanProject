@@ -69,9 +69,15 @@ void VulkanImageLoader::LoadImageTexture(short imageWidth, short imageHeight, co
         fclose(rawDataFile);
         rawDataFile = nullptr;
     }
-
-    rawDataFile = fopen(imageFilePath.c_str(), "rb");
-    fread(imageDataBuffer, size, 1, rawDataFile);
+    mLoadFrameCnt = 0;
+    if (imageFilePath.length()) {
+        rawDataFile = fopen(imageFilePath.c_str(), "rb");
+        fread(imageDataBuffer, size, 1, rawDataFile);
+        mLoadFrameCnt++;
+        mVkCompPtr->FreshFrameCnt(mLoadFrameCnt);
+    } else {
+        memset(imageDataBuffer, 0, size);
+    }
 
     void *mapData;
     vkMapMemory(mVkCompPtr->LogicalDevice(), stagingMemory, 0, size, 0, &mapData);
@@ -257,8 +263,11 @@ void VulkanImageLoader::ReadOneFrame() {
         auto read = fread(imageDataBuffer, size, 1, rawDataFile);
         if (read != 1) {
             fclose(rawDataFile);
+            mLoadFrameCnt = 0;
             rawDataFile = fopen(mImageFilePath.c_str(), "rb");
         }
+        mLoadFrameCnt ++;
+        mVkCompPtr->FreshFrameCnt(mLoadFrameCnt);
 
         void* mapData;
         vkMapMemory(mVkCompPtr->LogicalDevice(), stagingMemory, 0, size, 0, &mapData);

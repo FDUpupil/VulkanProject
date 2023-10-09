@@ -2,7 +2,7 @@
 #include "vulkanMgr.h"
 #include <Windows.h>
 
-HWND CreateMenuWindow(HWND parentWindow) {
+void InsertMenu(HWND parentWindow) {
     HMENU hSubMenuOpt = CreatePopupMenu();
     AppendMenu(hSubMenuOpt, MF_STRING, 11, L"Run/Stop");
     AppendMenu(hSubMenuOpt, MF_STRING, 12, L"Reset");
@@ -30,16 +30,8 @@ HWND CreateMenuWindow(HWND parentWindow) {
     AppendMenu(hMenu, MF_POPUP, reinterpret_cast<UINT_PTR>(hSubMenuOpt), L"Opt");
     AppendMenu(hMenu, MF_POPUP, reinterpret_cast<UINT_PTR>(hSubMenuFmt), L"Pixelformat");
     AppendMenu(hMenu, MF_POPUP, reinterpret_cast<UINT_PTR>(hSubMenuRes), L"Resolution");
-    
-    //HWND menuWindow = CreateWindowEx(
-    //    0, L"STATIC", NULL,
-    //    WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS,
-    //    0, 0, 800, 20, parentWindow, hMenu, GetModuleHandle(NULL), NULL);
 
     SetMenu(parentWindow, hMenu);
-
-    //return menuWindow;
-    return parentWindow;
 }
 
 static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
@@ -163,7 +155,19 @@ void VulkanComp::CreateWindowMy(int width, int height, bool resize, void* handle
     glfwMakeContextCurrent(mWindow);
 
     HWND hWnd = glfwGetWin32Window(mWindow);
-    HWND menuWindow = CreateMenuWindow(hWnd);
+    InsertMenu(hWnd);//设置窗口上的菜单栏
+
+    hwndText = CreateWindow(
+        L"STATIC",
+        L"NULL",
+        WS_VISIBLE | WS_CHILD,
+        10, 10,
+        50, 20,
+        hWnd,
+        NULL,
+        NULL,
+        NULL
+    );
 
     SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG_PTR)(handlerPtr));
 
@@ -788,7 +792,6 @@ SwapChainSupportDetails VulkanComp::querySwapChainSupport(VkPhysicalDevice devic
 }
 
 bool VulkanComp::isDeviceSuitable(VkPhysicalDevice device) {
-    printf("isDeviceSuitable");
     QueueFamilyIndices indices = findQueueFamilies(device);
 
     bool extensionsSupported = checkDeviceExtensionSupport(device);
@@ -825,4 +828,10 @@ void VulkanComp::DestoryInstance() {
     //close window
     glfwDestroyWindow(mWindow);
     glfwTerminate();
+}
+
+void VulkanComp::FreshFrameCnt(int frameCnt) {
+    wchar_t intStr[20];
+    std::swprintf(intStr, sizeof(intStr) / sizeof(wchar_t), L"%d", frameCnt);
+    SetWindowText(hwndText, intStr);
 }

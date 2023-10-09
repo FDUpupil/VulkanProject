@@ -51,6 +51,9 @@ public:
 
     int GetSyncFrameIndex(int renderOptCnt);
     void SubmitCommand(VkCommandBuffer comBuffer, int renderOptCnt);
+
+    //刷新页码
+    void FreshFrameCnt(int frameCnt);
     
 private:
     std::vector<const char*> getRequiredExtensions();
@@ -72,6 +75,7 @@ private:
     int windowWidth = 0;
     int windowHeight = 0;
     GLFWwindow* mWindow;
+    HWND hwndText;
     //基本vk组件
     VkInstance mInstance;
     VkSurfaceKHR mSurface;

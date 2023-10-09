@@ -5,7 +5,6 @@ class VulkanComp;
 
 class VulkanImageLoader {
 public:
-	VulkanImageLoader() = default;
 	VulkanImageLoader(VulkanComp* vkComp);
 	~VulkanImageLoader();
 
@@ -55,4 +54,6 @@ private:
 	//Ê±Ðò¿ØÖÆ
 	std::chrono::high_resolution_clock::time_point lastReadTime;
 	int fps = 24;
+
+	int mLoadFrameCnt = 0;
 };

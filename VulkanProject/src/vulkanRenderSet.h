@@ -7,7 +7,6 @@ class VulkanShaderSet;
 
 class VulkanRenderSet {
 public:
-	VulkanRenderSet() = default;
 	VulkanRenderSet(VulkanComp* comp);
 	~VulkanRenderSet();
 

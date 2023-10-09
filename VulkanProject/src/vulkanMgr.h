@@ -32,13 +32,13 @@ private:
     void DrawFrame();
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 
-    std::string mInputSeqFile = "seq/rawData.yuv";
+    std::string mInputSeqFile = "";
 
-    VulkanInfo mVkInfo;
-    VulkanComp mVkComp;
-    VulkanShaderSet mVkShaderSet;
-    VulkanRenderSet mVkRenderSet;
-    VulkanImageLoader mVkImageLoader;
+    VulkanInfo mVkInfo{};
+    VulkanComp* pVkComp = nullptr;
+    VulkanShaderSet* pVkShaderSet;
+    VulkanRenderSet* pVkRenderSet;
+    VulkanImageLoader* pVkImageLoader;
 
     std::vector<VkCommandBuffer> tComBuffers;
     uint32_t currentFrame = 0;

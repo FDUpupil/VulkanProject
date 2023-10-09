@@ -1,76 +1,96 @@
 #include "vulkanMgr.h"
 
 VulkanMgr::VulkanMgr() {
-	mVkShaderSet = VulkanShaderSet(&mVkComp);
-	mVkRenderSet = VulkanRenderSet(&mVkComp);
-	mVkImageLoader = VulkanImageLoader(&mVkComp);
+	pVkComp = new VulkanComp();
+	pVkShaderSet = new VulkanShaderSet(pVkComp);
+	pVkRenderSet = new VulkanRenderSet(pVkComp);
+	pVkImageLoader = new VulkanImageLoader(pVkComp);
 }
 
 VulkanMgr::~VulkanMgr() {
+	if (pVkComp) {
+		delete pVkComp;
+		pVkComp = nullptr;
+	}
 
+	if (pVkShaderSet) {
+		delete pVkShaderSet;
+		pVkShaderSet = nullptr;
+	}
+
+	if (pVkRenderSet) {
+		delete pVkRenderSet;
+		pVkRenderSet = nullptr;
+	}
+
+	if (pVkImageLoader) {
+		delete pVkImageLoader;
+		pVkImageLoader = nullptr;
+	}
 }
 
 void VulkanMgr::StartVulkanContext(VulkanInfo vkInfo) {
 	mVkInfo = vkInfo;
-	mVkComp.PrepareVulkan(false);
-	mVkComp.CreateWindowMy(vkInfo.windowWidth, vkInfo.windowHeight, false, this);
-	mVkComp.InitVulkanDevice();
+	pVkComp->PrepareVulkan(false);
+	pVkComp->CreateWindowMy(vkInfo.windowWidth, vkInfo.windowHeight, false, this);
+	pVkComp->InitVulkanDevice();
 
-	mVkComp.PrepareRenderOnScreen();
+	pVkComp->PrepareRenderOnScreen();
 }
 
 void VulkanMgr::SetVulkanShader() {
-	std::string shaderSuffix = mVkImageLoader.CurrentShaderSuffix();
-	std::string vertShaderFilePath = "shader/simple_shader_" + shaderSuffix + ".vert.spv";
-	std::string fragShaderFilePath = "shader/simple_shader_" + shaderSuffix + ".frag.spv";
-	mVkShaderSet.LoadVertShaderStageInfo(vertShaderFilePath);
-	mVkShaderSet.LoadFragShaderStageInfo(fragShaderFilePath);
+	std::string shaderSuffix = pVkImageLoader->CurrentShaderSuffix();
+	std::string vertShaderFilePath = "D:/WorkGit/vulkanProject/VulkanProject/shader/simple_shader_" + shaderSuffix + ".vert.spv";
+	std::string fragShaderFilePath = "D:/WorkGit/vulkanProject/VulkanProject/shader/simple_shader_" + shaderSuffix + ".frag.spv";
+	printf("path : %s", fragShaderFilePath.c_str());
+	pVkShaderSet->LoadVertShaderStageInfo(vertShaderFilePath);
+	pVkShaderSet->LoadFragShaderStageInfo(fragShaderFilePath);
 }
 
 void VulkanMgr::PrepareTexture() {
-	mVkImageLoader.LoadImageTexture(mVideoImageWidth, mVideoImageHeight, mInputSeqFile);
-	int pixelPlaneCnt = mVkImageLoader.CurrentPixelPlaneCnt();
-	mVkShaderSet.CLearDescriptorSetLayoutBindings();
+	pVkImageLoader->LoadImageTexture(mVideoImageWidth, mVideoImageHeight, mInputSeqFile);
+	int pixelPlaneCnt = pVkImageLoader->CurrentPixelPlaneCnt();
+	pVkShaderSet->CLearDescriptorSetLayoutBindings();
 	for (int i = 0; i < pixelPlaneCnt; i++) {
-		VkSampler textureSampler = mVkComp.CreateSampler(0);
-		mVkShaderSet.CreateAndLoadLayoutBinding(i, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, textureSampler);
-		mVkImageLoader.BindTextureSampler(i, textureSampler);
+		VkSampler textureSampler = pVkComp->CreateSampler(0);
+		pVkShaderSet->CreateAndLoadLayoutBinding(i, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, textureSampler);
+		pVkImageLoader->BindTextureSampler(i, textureSampler);
 	}
 }
 
 void VulkanMgr::ReadyToRender() {
-	tComBuffers = mVkComp.CreateCommandBuffers();
-	mVkRenderSet.LoadShaderSet(&mVkShaderSet);
-	mVkRenderSet.CreateRenderPass();
-	mVkRenderSet.CreateRnderPipelineLayout();
-	mVkRenderSet.CreateRnderPipeline();
-	mVkRenderSet.SetRenderTargetFrameBuffer();
-	mVkRenderSet.AllocateDescriptorSets();
-	mVkRenderSet.UpdateDescriptorSets(mVkImageLoader.ImageDesInfos());
+	tComBuffers = pVkComp->CreateCommandBuffers();
+	pVkRenderSet->LoadShaderSet(pVkShaderSet);
+	pVkRenderSet->CreateRenderPass();
+	pVkRenderSet->CreateRnderPipelineLayout();
+	pVkRenderSet->CreateRnderPipeline();
+	pVkRenderSet->SetRenderTargetFrameBuffer();
+	pVkRenderSet->AllocateDescriptorSets();
+	pVkRenderSet->UpdateDescriptorSets(pVkImageLoader->ImageDesInfos());
 
-	mVkImageLoader.ReadOneFrame();
+	//pVkImageLoader->ReadOneFrame();
 }
 
 void VulkanMgr::PresentLoop() {
-	mVkComp.ShowLoop(std::bind(&VulkanMgr::DrawFrame, this));
+	pVkComp->ShowLoop(std::bind(&VulkanMgr::DrawFrame, this));
 }
 
 void VulkanMgr::StopAndCleanVulkan() {
-	mVkComp.CleanComponet();
-	mVkRenderSet.CleanRenderComponet();
-	mVkComp.DestoryInstance();
+	pVkComp->CleanComponet();
+	pVkRenderSet->CleanRenderComponet();
+	pVkComp->DestoryInstance();
 }
 
 void VulkanMgr::DrawFrame() {
 	if (mHoldLoop) return;
-	int frameIndex = mVkComp.GetSyncFrameIndex(currentFrame);
+	int frameIndex = pVkComp->GetSyncFrameIndex(currentFrame);
 	vkResetCommandBuffer(tComBuffers[currentFrame], /*VkCommandBufferResetFlagBits*/ 0);
 
-	if(mPlay) mVkImageLoader.ReadOneFrame();
+	if(mPlay) pVkImageLoader->ReadOneFrame();
 	
 	recordCommandBuffer(tComBuffers[currentFrame], frameIndex);
 
-	mVkComp.SubmitCommand(tComBuffers[currentFrame], currentFrame);
+	pVkComp->SubmitCommand(tComBuffers[currentFrame], currentFrame);
 
 	currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
@@ -83,9 +103,9 @@ void VulkanMgr::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imag
 		throw std::runtime_error("failed to begin recording command buffer!");
 	}
 
-	mVkImageLoader.RecordCommand(commandBuffer);
+	pVkImageLoader->RecordCommand(commandBuffer);
 
-	mVkRenderSet.BindRrenderSystem(commandBuffer, imageIndex);
+	pVkRenderSet->BindRrenderSystem(commandBuffer, imageIndex);
 
 	if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
 		throw std::runtime_error("failed to record command buffer!");
@@ -99,7 +119,7 @@ void VulkanMgr::RunOrStop() {
 
 void VulkanMgr::Reset() {
 	mHoldLoop = true;
-	mVkComp.HoldLoop();
+	pVkComp->HoldLoop();
 	SetVulkanShader();
 	PrepareTexture();
 	ReadyToRender();
@@ -107,7 +127,7 @@ void VulkanMgr::Reset() {
 }
 
 void VulkanMgr::SetFmt(VkFormat imageFmt) {
-	mVkImageLoader.SetImagePixelFormat(imageFmt);
+	pVkImageLoader->SetImagePixelFormat(imageFmt);
 	Reset();
 }
 
