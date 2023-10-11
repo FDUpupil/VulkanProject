@@ -326,7 +326,7 @@ std::string VulkanImageLoader::CurrentShaderSuffix() {
             break;
         }
         case VK_FORMAT_G8_B8R8_2PLANE_420_UNORM: {
-            suffix = "yuvnv12";
+            suffix = "nv12";
             break;
         }
         default: {
