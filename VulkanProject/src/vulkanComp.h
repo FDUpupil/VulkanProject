@@ -54,6 +54,7 @@ public:
 
     //Ë¢ÐÂÒ³Âë
     void FreshFrameCnt(int frameCnt);
+    void CloseGLFW();
     
 private:
     std::vector<const char*> getRequiredExtensions();

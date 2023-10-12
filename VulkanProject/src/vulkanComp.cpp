@@ -128,6 +128,10 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
             DragFinish(hDrop);
             break;
         }
+        case WM_CLOSE: {
+            vkMgr->CloseWnd();
+            break;
+        }
     }
 
     return DefWindowProc(hWnd, message, wParam, lParam);
@@ -699,7 +703,7 @@ void VulkanComp::SubmitCommand(VkCommandBuffer comBuffer, int renderOptCnt) {
     VkResult result = vkQueuePresentKHR(mPresentQueue, &presentInfo);
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
-        throw std::runtime_error("failed to present swap chain image!");
+        //throw std::runtime_error("failed to present swap chain image!");
     }
     else if (result != VK_SUCCESS) {
         throw std::runtime_error("failed to present swap chain image!");
@@ -834,4 +838,8 @@ void VulkanComp::FreshFrameCnt(int frameCnt) {
     wchar_t intStr[20];
     std::swprintf(intStr, sizeof(intStr) / sizeof(wchar_t), L"%d", frameCnt);
     SetWindowText(hwndText, intStr);
+}
+
+void VulkanComp::CloseGLFW() {
+    glfwSetWindowShouldClose(mWindow, GLFW_TRUE);
 }

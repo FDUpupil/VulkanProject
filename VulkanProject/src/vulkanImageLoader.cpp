@@ -89,7 +89,7 @@ void VulkanImageLoader::LoadImageTexture(short imageWidth, short imageHeight, co
     viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
     viewInfo.image = mImage;
     viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    viewInfo.format = mPixelFormat;
+    viewInfo.format = m1stPixelFmt;
     viewInfo.components.r = VK_COMPONENT_SWIZZLE_R;
     viewInfo.components.g = VK_COMPONENT_SWIZZLE_G;
     viewInfo.components.b = VK_COMPONENT_SWIZZLE_B;
@@ -115,7 +115,7 @@ void VulkanImageLoader::LoadImageTexture(short imageWidth, short imageHeight, co
         viewInfoU.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
         viewInfoU.image = mImage;
         viewInfoU.viewType = VK_IMAGE_VIEW_TYPE_2D;
-        viewInfoU.format = mPixelFormat;
+        viewInfoU.format = m2ndPixelFmt;
         viewInfoU.components.r = VK_COMPONENT_SWIZZLE_R;
         viewInfoU.components.g = VK_COMPONENT_SWIZZLE_G;
         viewInfoU.components.b = VK_COMPONENT_SWIZZLE_B;
@@ -142,7 +142,7 @@ void VulkanImageLoader::LoadImageTexture(short imageWidth, short imageHeight, co
         viewInfoV.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
         viewInfoV.image = mImage;
         viewInfoV.viewType = VK_IMAGE_VIEW_TYPE_2D;
-        viewInfoV.format = mPixelFormat;
+        viewInfoV.format = m3rdPixelFmt;
         viewInfoV.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
         viewInfoV.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
         viewInfoV.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
@@ -297,6 +297,28 @@ void VulkanImageLoader::BindTextureSampler(int index, VkSampler textureSampler) 
 
 void VulkanImageLoader::SetImagePixelFormat(VkFormat imageFmt) {
     mPixelFormat = imageFmt;
+    switch (mPixelFormat) {
+        case VK_FORMAT_R8G8B8A8_UNORM:
+        case VK_FORMAT_B8G8R8A8_UNORM:
+        case VK_FORMAT_R8G8B8_UNORM:
+        case VK_FORMAT_B8G8R8_UNORM:
+        case VK_FORMAT_R16G16B16A16_UNORM: {
+            m1stPixelFmt = m2ndPixelFmt = m3rdPixelFmt = mPixelFormat;
+            break;
+        }
+        case VK_FORMAT_G8_B8R8_2PLANE_420_UNORM: {
+            m1stPixelFmt = VK_FORMAT_R8_UNORM;
+            m2ndPixelFmt = m3rdPixelFmt = VK_FORMAT_R8G8_UNORM;
+            break;
+        }
+        case VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM: {
+            m1stPixelFmt = m2ndPixelFmt = m3rdPixelFmt = VK_FORMAT_R8_UNORM;
+            break;
+        }
+        default: {
+            break;
+        }
+    }
 }
 
 int VulkanImageLoader::CurrentPixelPlaneCnt() {

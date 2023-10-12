@@ -31,6 +31,9 @@ private:
 	int loadImageWidth;
 	int loadImageHeight;
 	VkFormat mPixelFormat = VK_FORMAT_R8G8B8A8_UNORM;
+	VkFormat m1stPixelFmt = VK_FORMAT_R8G8B8A8_UNORM;
+	VkFormat m2ndPixelFmt = VK_FORMAT_R8G8B8A8_UNORM;
+	VkFormat m3rdPixelFmt = VK_FORMAT_R8G8B8A8_UNORM;
 
 	VkBuffer stagingBuffer;
 	VkDeviceMemory stagingMemory;

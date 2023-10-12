@@ -25,6 +25,7 @@ public:
     void Reset();
     void SetFmt(VkFormat imageFmt);
     void SetRes(int imageWidth, int imageHeight);
+    void CloseWnd();
 
     void SetInputFile(std::string imageFilePath);
 

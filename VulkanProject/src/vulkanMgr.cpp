@@ -40,8 +40,8 @@ void VulkanMgr::StartVulkanContext(VulkanInfo vkInfo) {
 
 void VulkanMgr::SetVulkanShader() {
 	std::string shaderSuffix = pVkImageLoader->CurrentShaderSuffix();
-	std::string vertShaderFilePath = "D:/WorkGit/vulkanProject/VulkanProject/shader/simple_shader_" + shaderSuffix + ".vert.spv";
-	std::string fragShaderFilePath = "D:/WorkGit/vulkanProject/VulkanProject/shader/simple_shader_" + shaderSuffix + ".frag.spv";
+	std::string vertShaderFilePath = "shader/simple_shader_" + shaderSuffix + ".vert.spv";
+	std::string fragShaderFilePath = "shader/simple_shader_" + shaderSuffix + ".frag.spv";
 	printf("path : %s", fragShaderFilePath.c_str());
 	pVkShaderSet->LoadVertShaderStageInfo(vertShaderFilePath);
 	pVkShaderSet->LoadFragShaderStageInfo(fragShaderFilePath);
@@ -140,4 +140,8 @@ void VulkanMgr::SetRes(int imageWidth, int imageHeight) {
 void VulkanMgr::SetInputFile(std::string imageFilePath) {
 	mInputSeqFile = imageFilePath;
 	Reset();
+}
+
+void VulkanMgr::CloseWnd() {
+	pVkComp->CloseGLFW();
 }
